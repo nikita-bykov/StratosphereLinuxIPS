@@ -407,6 +407,13 @@ class ProfilerProcess(multiprocessing.Process):
             # We do not know the indexes of MACs.
             self.column_values['smac'] = ''
             self.column_values['dmac'] = ''
+            # Send this line to anomaly-detetction module and remove datettime objects
+            # from the dict as they're not JSON serializable
+            to_send = self.column_values.copy()
+            to_send['starttime'] = ''
+            to_send['endtime'] = ''
+            to_send = json.dumps(to_send)
+            __database__.publish('new_conn_flow',to_send)
         elif 'dns' in new_line['type']:
             self.column_values['type'] = 'dns'
             try:
@@ -746,6 +753,13 @@ class ProfilerProcess(multiprocessing.Process):
                 self.column_values['dmac'] = line['resp_l2_addr']
             except KeyError:
                 self.column_values['dmac'] = ''
+            # Send this line to anomaly-detetction module and remove datettime objects
+            # from the dict as they're not JSON serializable
+            to_send = self.column_values.copy()
+            to_send['starttime'] = ''
+            to_send['endtime'] = ''
+            to_send = json.dumps(to_send)
+            __database__.publish('new_conn_flow',to_send)
         elif 'dns' in file_type:
             #{"ts":1538080852.403669,"uid":"CtahLT38vq7vKJVBC3","id.orig_h":"192.168.2.12","id.orig_p":56343,"id.resp_h":"192.168.2.1","id.resp_p":53,"proto":"udp","trans_id":2,"rtt":0.008364,"query":"pool.ntp.org","qclass":1,"qclass_name":"C_INTERNET","qtype":1,"qtype_name":"A","rcode":0,"rcode_name":"NOERROR","AA":false,"TC":false,"RD":true,"RA":true,"Z":0,"answers":["185.117.82.70","212.237.100.250","213.251.52.107","183.177.72.201"],"TTLs":[42.0,42.0,42.0,42.0],"rejected":false}
             self.column_values['type'] = 'dns'
