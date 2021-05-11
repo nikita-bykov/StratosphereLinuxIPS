@@ -675,6 +675,9 @@ class ProfilerProcess(multiprocessing.Process):
         self.column_values = {}
         # We need to set it to empty at the beggining so any new flow has the key 'type'
         self.column_values['type'] = ''
+        # this will be sent as a str instead of a datettime object to the anomaly detector
+        # because objects of type datetime is not JSON serializable
+        anomaly_starttime = line['ts']
         try:
             self.column_values['starttime'] = self.get_time(line['ts'])
         except KeyError:
@@ -753,10 +756,16 @@ class ProfilerProcess(multiprocessing.Process):
                 self.column_values['dmac'] = line['resp_l2_addr']
             except KeyError:
                 self.column_values['dmac'] = ''
+            #todo add the following to tab separated zeek parser
+            self.column_values['orig_ip_bytes'] = line.get('orig_ip_bytes','')
+            self.column_values['resp_ip_bytes'] = line.get('resp_ip_bytes','')
+            self.column_values['conn_state'] = line.get('conn_state','')
+            self.column_values['missed_bytes'] = line.get('missed_bytes','')
+            self.column_values['history'] = line.get('history','')
             # Send this line to anomaly-detetction module and remove datettime objects
             # from the dict as they're not JSON serializable
             to_send = self.column_values.copy()
-            to_send['starttime'] = ''
+            to_send['starttime'] = anomaly_starttime
             to_send['endtime'] = ''
             to_send = json.dumps(to_send)
             __database__.publish('new_conn_flow',to_send)
