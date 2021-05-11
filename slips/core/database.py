@@ -1116,11 +1116,11 @@ class Database(object):
         """ Subscribe to channel """
         # For when a TW is modified
         pubsub = self.r.pubsub()
-        supported_channels = ['tw_modified' , 'evidence_added' , 'new_ip' ,  'new_flow' , \
-                              'new_dns', 'new_dns_flow','new_http', 'new_ssl' , 'new_profile',\
-                    'give_threat_intelligence', 'new_letters', 'ip_info_change', 'dns_info_change',\
-                              'tw_closed', 'core_messages','new_blocking', 'new_ssh',\
-                              'new_url','new_notice','new_conn_flow']
+        supported_channels = ['tw_modified' , 'evidence_added' , 'new_ip' ,  'new_flow' ,
+                              'new_dns', 'new_dns_flow','new_http', 'new_ssl' , 'new_profile',
+                              'give_threat_intelligence', 'new_letters', 'ip_info_change',
+                              'dns_info_change','tw_closed', 'core_messages','new_blocking',
+                              'new_ssh','new_url','new_notice','new_conn_flow']
         for supported_channel in supported_channels:
             if supported_channel in channel:
                 pubsub.subscribe(channel)
