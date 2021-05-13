@@ -129,3 +129,5 @@ package-lock.json
 modules/blessed/node_modules/
 alerts.*
 nohup.out
+# Anomaly detection saved to disk models
+modules/anomaly-detection/anomaly-detection-model
