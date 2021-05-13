@@ -1485,6 +1485,12 @@ class ProfilerProcess(multiprocessing.Process):
                 direction = self.column_values['dir']
                 dpkts = self.column_values['dpkts']
                 dbytes = self.column_values['dbytes']
+                try:
+                    orig_ip_bytes = self.column_values['orig_ip_bytes']
+                    resp_ip_bytes = self.column_values['resp_ip_bytes']
+                except:
+                    # not a conn flow, probably doesn't have orig_ip_bytes or resp_ip_bytes
+                    pass
             elif 'dns' in flow_type:
                 query = self.column_values['query']
                 qclass_name = self.column_values['qclass_name']
@@ -1531,7 +1537,11 @@ class ProfilerProcess(multiprocessing.Process):
                     port_type = 'Src'
                     __database__.add_port(profileid, twid, daddr_as_obj, self.column_values, role, port_type)
                     # Add the flow with all the fields interpreted
-                    __database__.add_flow(profileid=profileid, twid=twid, stime=starttime, dur=dur, saddr=str(saddr_as_obj), sport=sport, daddr=str(daddr_as_obj), dport=dport, proto=proto, state=state, pkts=pkts, allbytes=allbytes, spkts=spkts, sbytes=sbytes, appproto=appproto, uid=uid, label=self.label)
+                    __database__.add_flow(profileid=profileid, twid=twid, stime=starttime, dur=dur, saddr=str(saddr_as_obj),
+                                          sport=sport, daddr=str(daddr_as_obj), dport=dport, proto=proto, state=state,
+                                          pkts=pkts, allbytes=allbytes, spkts=spkts, sbytes=sbytes, appproto=appproto,
+                                          uid=uid, label=self.label, dbytes=dbytes, orig_ip_bytes=orig_ip_bytes,
+                                          dpkts=dpkts, resp_ip_bytes=resp_ip_bytes)
                 elif 'dns' in flow_type:
                     __database__.add_out_dns(profileid, twid, flow_type, uid, query, qclass_name, qtype_name, rcode_name, answers, ttls)
                     # Add DNS resolution if there are answers for the query
@@ -1552,7 +1562,6 @@ class ProfilerProcess(multiprocessing.Process):
                                              self.column_values['client_cert_chain_fuids'], self.column_values['subject'],
                                              self.column_values['issuer'], self.column_values['validation_status'],
                                              self.column_values['curve'], self.column_values['server_name'])
-
                 elif flow_type == 'ssh':
                     __database__.add_out_ssh(profileid, twid, flow_type, uid, self.column_values['version'], self.column_values['auth_attempts'], self.column_values['auth_success'], self.column_values['client'], self.column_values['server'], self.column_values['cipher_alg'], self.column_values['mac_alg'], self.column_values['compression_alg'], self.column_values['kex_alg'], self.column_values['host_key_alg'], self.column_values['host_key'])
                 elif flow_type == 'notice':
@@ -1585,7 +1594,11 @@ class ProfilerProcess(multiprocessing.Process):
                     port_type = 'Src'
                     __database__.add_port(profileid, twid, daddr_as_obj, self.column_values, role, port_type)
                     # Add the flow with all the fields interpreted
-                    __database__.add_flow(profileid=profileid, twid=twid, stime=starttime, dur=dur, saddr=str(saddr_as_obj), sport=sport, daddr=str(daddr_as_obj), dport=dport, proto=proto, state=state, pkts=pkts, allbytes=allbytes, spkts=spkts, sbytes=sbytes, appproto=appproto, uid=uid, label=self.label)
+                    __database__.add_flow(profileid=profileid, twid=twid, stime=starttime, dur=dur, saddr=str(saddr_as_obj),
+                                          sport=sport, daddr=str(daddr_as_obj), dport=dport, proto=proto, state=state,
+                                          pkts=pkts, allbytes=allbytes, spkts=spkts, sbytes=sbytes, appproto=appproto,
+                                          uid=uid, label=self.label, dbytes=dbytes, orig_ip_bytes=orig_ip_bytes,
+                                          dpkts=dpkts, resp_ip_bytes=resp_ip_bytes)
                     # No dns check going in. Probably ok.
 
             def get_rev_profile(starttime, daddr_as_obj):
