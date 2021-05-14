@@ -32,6 +32,7 @@ Slips is a modular software. Each module is designed to perform a specific detec
 | VirusTotal | module to lookup IP address on VirusTotal |✅|
 | flowalerts | module to find malicious behaviour in each flow. Current measures are: long duration of the connection, successful ssh |✅|
 | blocking | module to block malicious IPs connecting to the device |⚠️|
+| anomaly-detection | module to detect anomalies for conn.log files of zeek/bro |✅|
 
 
 Slips has its own console graphical user interface called Kalipso. Kalipso summarizes the detections performed by Slips in colorful graphs and tables.
