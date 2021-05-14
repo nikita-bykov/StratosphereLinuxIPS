@@ -194,7 +194,6 @@ if __name__ == '__main__':
     parser.add_argument('-p', '--blocking',action='store_true',required=False,
                         help='block IPs that connect to the computer. Supported only on Linux.')
     parser.add_argument("-h", "--help", action="help", help="command line help")
-
     args = parser.parse_args()
 
     # Read the config file name given from the parameters
@@ -323,6 +322,11 @@ if __name__ == '__main__':
         # Disable blocking if was not asked and if it is not interface
         if not args.blocking or not args.interface:
             to_ignore.append('blocking')
+        # Disable anomaly detection module if it's not a zeek file
+        anomaly_detection_mode = config.get('anomaly-detection', 'mode').lower()
+        if 'train' in anomaly_detection_mode and input_type != 'file':
+            to_ignore.append('anomaly-detection')
+            print("To use slips in train mode, specify a zeek folder.")
         try:
             # This 'imports' all the modules somehow, but then we ignore some
             modules_to_call = load_modules(to_ignore)
