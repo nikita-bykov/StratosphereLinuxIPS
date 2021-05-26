@@ -669,9 +669,6 @@ class ProfilerProcess(multiprocessing.Process):
         self.column_values = {}
         # We need to set it to empty at the beggining so any new flow has the key 'type'
         self.column_values['type'] = ''
-        # this will be sent as a str instead of a datettime object to the anomaly detector
-        # because objects of type datetime is not JSON serializable
-        anomaly_starttime = line['ts']
         try:
             self.column_values['starttime'] = self.get_time(line['ts'])
         except KeyError:
