@@ -372,7 +372,9 @@ class Database(object):
         for profile_tw_to_close in profiles_tws_to_close:
             profile_tw_to_close_id = profile_tw_to_close[0]
             profile_tw_to_close_time = profile_tw_to_close[1]
-            self.print(f'The profile id {profile_tw_to_close_id} has to be closed because it was last modifed on {profile_tw_to_close_time} and we are closing everything older than {modification_time}. Current time {sit}. Difference: {modification_time - profile_tw_to_close_time}', 7, 0)
+            self.print(f'The profile id {profile_tw_to_close_id} has to be closed because it was last modifed on {profile_tw_to_close_time}'
+                       f' and we are closing everything older than {modification_time}. Current time {sit}. '
+                       f'Difference: {modification_time - profile_tw_to_close_time}', 7, 0)
             self.markProfileTWAsClosed(profile_tw_to_close_id)
 
     def add_ips(self, profileid, twid, ip_as_obj, columns, role: str):
@@ -1120,7 +1122,7 @@ class Database(object):
                               'new_dns', 'new_dns_flow','new_http', 'new_ssl' , 'new_profile',
                               'give_threat_intelligence', 'new_letters', 'ip_info_change',
                               'dns_info_change','tw_closed', 'core_messages','new_blocking',
-                              'new_ssh','new_url','new_notice','new_conn_flow']
+                              'new_ssh','new_url','new_notice']
         for supported_channel in supported_channels:
             if supported_channel in channel:
                 pubsub.subscribe(channel)
@@ -1161,8 +1163,8 @@ class Database(object):
 
     def get_flow(self, profileid, twid, uid):
         """	
-        Returns the flow in the specific time	
-        The format is a dictionary	
+        Returns the flow in the specific time
+        The format is a dictionary
         """
         data = {}
         temp = self.r.hget(profileid + self.separator + twid + self.separator + 'flows', uid)
