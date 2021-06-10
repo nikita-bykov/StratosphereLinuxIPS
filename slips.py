@@ -451,6 +451,8 @@ if __name__ == '__main__':
                         print('Stopping Slips')
                         # Stop the modules that are subscribed to channels
                         __database__.publish_stop()
+                        # Give anomaly detection model time to train and save
+                        time.sleep(5)
                         # Here we should Wait for any channel if it has still
                         # data to receive in its channel
                         # Send manual stops to the process not using channels
