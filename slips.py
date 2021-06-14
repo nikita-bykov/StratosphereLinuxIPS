@@ -36,7 +36,7 @@ import importlib
 from slips.common.abstracts import Module
 from slips.common.argparse import ArgumentParser
 
-version = '0.7.2'
+version = '0.7.3'
 
 # Ignore warnings on CPU from tensorflow
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -62,9 +62,18 @@ def recognize_host_ip():
         ipaddr_check = s.getsockname()[0]
         s.close()
     except Exception as ex:
-        print('Network is unreachable')
+        # not connected to the internet
         return None
     return ipaddr_check
+
+def create_folder_for_logs():
+    '''
+    Create a folder for logs if logs are enabled
+    '''
+    logs_folder = datetime.now().strftime('%Y-%m-%d--%H:%M:%S')
+    if not os.path.exists(logs_folder):
+        os.makedirs(logs_folder)
+    return logs_folder
 
 def update_malicious_file(outputqueue, config):
     '''
@@ -93,8 +102,6 @@ def clear_redis_cache_database(redis_host = 'localhost', redis_port = 6379) -> s
     rcache = redis.StrictRedis(host=redis_host, port=redis_port, db=1, charset="utf-8",
                                decode_responses=True)
     rcache.flushdb()
-
-
 
 
 def check_zeek_or_bro():
@@ -159,11 +166,54 @@ def get_cwd():
             cwd = arg[:arg.index('slips.py')]
             return cwd
 
+def shutdown_gracefully():
+    """ Wait for all modules to confirm thet they're done processing before shutting down """
+
+    try:
+        print('Stopping Slips')
+        # Stop the modules that are subscribed to channels
+        __database__.publish_stop()
+        # Here we should Wait for any channel if it has still
+        # data to receive in its channel
+        finished_modules = []
+        loaded_modules = modules_to_call.keys()
+        # loop until all loaded modules are finished
+        while len(finished_modules) < len(loaded_modules):
+            # print(f"Modules not finished yet {set(loaded_modules) - set(finished_modules)}")
+            message = c1.get_message(timeout=0.01)
+            if message and message['data'] == 'stop_process':
+                continue
+            if message and message['channel'] == 'finished_modules' and type(message['data']) is not int:
+                # all modules must reply with their names in this channel after
+                # receiving the stop_process msg
+                # to confirm that all processing is done and we can safely exit now
+                module_name = message['data']
+                if module_name not in finished_modules:
+                    finished_modules.append(module_name)
+                    print(f"{module_name} Stopped.")
+
+        # Send manual stops to the process not using channels
+        try:
+            logsProcessQueue.put('stop_process')
+        except NameError:
+            # The logsProcessQueue is not there because we
+            # didnt started the logs files (used -l)
+            pass
+        outputProcessQueue.put('stop_process')
+        profilerProcessQueue.put('stop_process')
+        inputProcess.terminate()
+        os._exit(-1)
+        return
+    except KeyboardInterrupt:
+        return
 
 ####################
 # Main
 ####################
-if __name__ == '__main__':  
+if __name__ == '__main__':
+    # Before the argparse, we need to set up the default path fr alerts.log and alerts.json. In our case, it is output folder.
+    alerts_default_path = 'output/'
+
     print('Stratosphere Linux IPS. Version {}'.format(version))
     print('https://stratosphereips.org\n')
 
@@ -189,11 +239,15 @@ if __name__ == '__main__':
                         help='do not create log files with all the traffic info and detections.')
     parser.add_argument('-F','--pcapfilter',action='store',required=False,type=str,
                         help='packet filter for Zeek. BPF style.')
+    parser.add_argument('-G', '--gui', help='Use the nodejs GUI interface.', required=False, default=False, action='store_true')
     parser.add_argument('-cc','--clearcache',action='store_true', required=False,
                         help='clear a cache database.')
     parser.add_argument('-p', '--blocking',action='store_true',required=False,
                         help='block IPs that connect to the computer. Supported only on Linux.')
+    parser.add_argument('-o', '--output', action='store', required=False, default=alerts_default_path,
+                        help='store alerts.json and alerts.txt in the provided folder.')
     parser.add_argument("-h", "--help", action="help", help="command line help")
+
     args = parser.parse_args()
 
     # Read the config file name given from the parameters
@@ -230,6 +284,13 @@ if __name__ == '__main__':
     if args.clearcache:
         print('Deleting Cache DB in Redis.')
         clear_redis_cache_database()
+
+    # Remove default folder for alerts, if exists
+    if os.path.exists(alerts_default_path):
+        shutil.rmtree(alerts_default_path)
+    # Create output folder for alerts.txt and alerts.json if they do not exist
+    if not os.path.exists(args.output):
+        os.makedirs(args.output)
 
     # If the user wants to blocks, the user needs to give a permission to modify iptables
     # Also check if the user blocks on interface, does not make sense to block on files
@@ -318,7 +379,11 @@ if __name__ == '__main__':
     # This plugins import will automatically load the modules and put them in the __modules__ variable
     if to_ignore:
         # Convert string to list
-        to_ignore = eval(to_ignore)
+        to_ignore = to_ignore.replace("[","").replace("]","").replace(" ","").split(",")
+        # Ignore exporting alerts module if export_to is empty
+        export_to = config.get('ExportingAlerts', 'export_to').rstrip("][").replace(" ","")
+        if 'stix' not in export_to.lower() and 'slack' not in export_to.lower():
+            to_ignore.append('ExportingAlerts')
         # Disable blocking if was not asked and if it is not interface
         if not args.blocking or not args.interface:
             to_ignore.append('blocking')
@@ -335,30 +400,34 @@ if __name__ == '__main__':
             # There are not modules in the configuration to ignore?
             print('No modules are ignored')
 
-    # # Get the type of output from the parameters
-    # # Several combinations of outputs should be able to be used
-    # if args.gui:
-    #     # Create the curses thread
-    #     guiProcessQueue = Queue()
-    #     guiProcessThread = GuiProcess(guiProcessQueue, outputProcessQueue, args.verbose, args.debug, config)
-    #     guiProcessThread.start()
-    #     outputProcessQueue.put('quiet')
+    # Get the type of output from the parameters
+    # Several combinations of outputs should be able to be used
+    if args.gui:
+        # Create the curses thread
+        guiProcessQueue = Queue()
+        guiProcessThread = GuiProcess(guiProcessQueue, outputProcessQueue, args.verbose, args.debug, config)
+        guiProcessThread.start()
+        outputProcessQueue.put('quiet')
     if not args.nologfiles:
         # By parameter, this is True. Then check the conf. Only create the logs if the conf file says True
         do_logs = read_configuration(config, 'parameters', 'create_log_files')
         if do_logs == 'yes':
+            # Create a folder for logs
+            logs_folder = create_folder_for_logs()
             # Create the logsfile thread if by parameter we were told, or if it is specified in the configuration
             logsProcessQueue = Queue()
-            logsProcessThread = LogsProcess(logsProcessQueue, outputProcessQueue, args.verbose, args.debug, config)
+            logsProcessThread = LogsProcess(logsProcessQueue, outputProcessQueue, args.verbose, args.debug, config, logs_folder)
             logsProcessThread.start()
             outputProcessQueue.put('20|main|Started logsfiles thread [PID {}]'.format(logsProcessThread.pid))
-        # If args.nologfiles is False, then we don't want log files, independently of what the conf says.
+    # If args.nologfiles is False, then we don't want log files, independently of what the conf says.
+    else:
+        logs_folder = False
 
     # Evidence thread
     # Create the queue for the evidence thread
     evidenceProcessQueue = Queue()
     # Create the thread and start it
-    evidenceProcessThread = EvidenceProcess(evidenceProcessQueue, outputProcessQueue, config)
+    evidenceProcessThread = EvidenceProcess(evidenceProcessQueue, outputProcessQueue, config, args.output, logs_folder)
     evidenceProcessThread.start()
     outputProcessQueue.put('20|main|Started Evidence thread [PID {}]'.format(evidenceProcessThread.pid))
 
@@ -376,10 +445,19 @@ if __name__ == '__main__':
     inputProcess.start()
     outputProcessQueue.put('20|main|Started input thread [PID {}]'.format(inputProcess.pid))
 
+    c1 = __database__.subscribe('finished_modules')
+
     # Store the host IP address if input type is interface
     if input_type == 'interface':
         hostIP = recognize_host_ip()
-        __database__.set_host_ip(hostIP)
+        while True:
+            try:
+                __database__.set_host_ip(hostIP)
+                break
+            except redis.exceptions.DataError:
+                print("Not Connected to the internet. Reconnecting in 10s.")
+                time.sleep(10)
+                hostIP = recognize_host_ip()
 
     # As the main program, keep checking if we should stop slips or not
     # This is not easy since we need to be sure all the modules are stopped
@@ -413,7 +491,7 @@ if __name__ == '__main__':
             __database__.check_TW_to_close()
 
             # In interface we keep track of the host IP. If there was no
-            # modified TWs in the host IP, we check if the network was changed.
+            # modified TWs in the host NotIP, we check if the network was changed.
             # Dont try to stop slips if its catpurting from an interface
             if args.interface:
                 # To check of there was a modified TW in the host IP. If not,
@@ -439,6 +517,8 @@ if __name__ == '__main__':
                 else:
                     minimum_intervals_to_wait = limit_minimum_intervals_to_wait
 
+            # ---------------------------------------- Stopping slips
+
             # When running Slips in the file.
             # If there were no modified TW in the last timewindow time,
             # then start counting down
@@ -447,43 +527,13 @@ if __name__ == '__main__':
                     # print('Counter to stop Slips. Amount of modified
                     # timewindows: {}. Stop counter: {}'.format(amount_of_modified, minimum_intervals_to_wait))
                     if minimum_intervals_to_wait == 0:
-                        # Stop the output Process
-                        print('Stopping Slips')
-                        # Stop the modules that are subscribed to channels
-                        __database__.publish_stop()
-                        # Give anomaly detection model time to train and save
-                        time.sleep(5)
-                        # Here we should Wait for any channel if it has still
-                        # data to receive in its channel
-                        # Send manual stops to the process not using channels
-                        try:
-                            logsProcessQueue.put('stop_process')
-                        except NameError:
-                            # The logsProcessQueue is not there because we
-                            # didnt started the logs files (used -l)
-                            pass
-                        outputProcessQueue.put('stop_process')
-                        profilerProcessQueue.put('stop_process')
+                        shutdown_gracefully()
                         break
                     minimum_intervals_to_wait -= 1
                 else:
                     minimum_intervals_to_wait = limit_minimum_intervals_to_wait
 
     except KeyboardInterrupt:
-        print('Stopping Slips')
-        # Stop the modules that are subscribed to channels
-        __database__.publish_stop()
-        # Here we should Wait for any channel if it has still data to receive
-        # in its channel
-        # Send manual stops to the process not using channels
-        try:
-            logsProcessQueue.put('stop_process')
-        except NameError:
-            # The logsProcessQueue is not there because we didnt started the
-            # logs files (used -l)
-            pass
+        shutdown_gracefully()
 
-        outputProcessQueue.put('stop_process')
-        profilerProcessQueue.put('stop_process')
-        inputProcess.terminate()
-        os._exit(1)
+

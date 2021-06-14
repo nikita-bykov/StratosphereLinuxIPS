@@ -1,6 +1,6 @@
 <h1 align="center"> 
 
-Slips v0.7.1
+Slips v0.7.3
 </h1>
 
 Slips is a behavioral-based Python intrusion prevention system that uses machine learning to detect malicious behaviors in the network traffic. Slips was designed to focus on targeted attacks, detection of command and control channels to provide good visualisation for the analyst.
@@ -9,7 +9,7 @@ Slips is a modular software.
 <h3 align="center"> 
 Behavioral based Intrusion Prevention System<br><br>
 
-Slips documentation is [here](https://stratospherelinuxips.readthedocs.io/en/master/) <br>
+Slips documentation is [here](https://stratospherelinuxips.readthedocs.io/en/develop/) <br>
 
 [Features](#features) — [Slips in action](#slips-in-action) — [Running Slips in a Docker](#running-slips-in-a-docker) — [Authors](#authors) - [How to contribute](#how-to-contribute)
 </h3>
@@ -81,4 +81,4 @@ All contributors are welcomed! How you can help?
 
 - Run Slips and report bugs and needed features, and suggest ideas
 - Pull requests with a solved GitHub issue and new feature
-- Pull request with a new detection module. The instructions and a template for new detection module [here](https://stratospherelinuxips.readthedocs.io/en/latest/).
+- Pull request with a new detection module. The instructions and a template for new detection module [here](https://stratospherelinuxips.readthedocs.io/en/develop/).

@@ -21,12 +21,11 @@ import platform
 import json
 import configparser
 from ipaddress import ip_address
-import time
 
 class Module(Module, multiprocessing.Process):
     name = 'flowalerts'
     description = 'Alerts about flows: long connection, successful ssh'
-    authors = ['Kamila Babayeva', 'Sebastian Garcia']
+    authors = ['Kamila Babayeva', 'Sebastian Garcia','Alya Gomaa']
 
     def __init__(self, outputqueue, config):
         multiprocessing.Process.__init__(self)
@@ -136,12 +135,25 @@ class Module(Module, multiprocessing.Process):
 
     def set_evidence_self_signed_certificates(self, profileid, twid, ip, description,  ip_state='ip'):
         '''
-        Set an evidence for a self signed certificate.
+        Set evidence for self signed certificates.
         '''
         confidence = 0.5
         threat_level = 30
         type_detection = 'dstip'
         type_evidence = 'SelfSignedCertificate'
+        detection_info = ip
+        if not twid:
+            twid = ''
+        __database__.setEvidence(type_detection, detection_info, type_evidence, threat_level, confidence, description, profileid=profileid, twid=twid)
+
+    def set_evidence_for_invalid_certificates(self,profileid, twid, ip, description):
+        '''
+        Set evidence for Invalid SSL certificates.
+        '''
+        confidence = 0.5
+        threat_level = 20
+        type_detection  = 'dstip'
+        type_evidence = 'InvalidCertificate'
         detection_info = ip
         if not twid:
             twid = ''
@@ -176,13 +188,16 @@ class Module(Module, multiprocessing.Process):
                                                   module_label)
 
     def run(self):
-        try:
-            # Main loop function
-            while True:
+        # Main loop function
+        while True:
+            try:
+
                 # ---------------------------- new_flow channel
                 message = self.c1.get_message(timeout=0.01)
                 # if timewindows are not updated for a long time, Slips is stopped automatically.
                 if message and message['data'] == 'stop_process':
+                    # confirm that the module is done processing
+                    __database__.publish('finished_modules', self.name)
                     return True
                 if message and message['channel'] == 'new_flow' and type(message['data']) is not int:
                     data = message['data']
@@ -218,6 +233,8 @@ class Module(Module, multiprocessing.Process):
                 # ---------------------------- new_ssh channel
                 message = self.c2.get_message(timeout=0.01)
                 if message and message['data'] == 'stop_process':
+                    # Confirm that the module is done processing
+                    __database__.publish('finished_modules', self.name)
                     return True
                 if message and message['channel'] == 'new_ssh'  and type(message['data']) is not int:
                     data = message['data']
@@ -266,6 +283,8 @@ class Module(Module, multiprocessing.Process):
                 # Check for self signed certificates in new_notice channel (notice.log)
                 message = self.c3.get_message(timeout=0.01)
                 if message and message['data'] == 'stop_process':
+                    # Confirm that the module is done processing
+                    __database__.publish('finished_modules', self.name)
                     return True
                 if message and message['channel'] == 'new_notice':
                     """ Checks for self signed certificates in the notice data """
@@ -286,9 +305,19 @@ class Module(Module, multiprocessing.Process):
                             description = 'Self-signed certificate. Destination IP: {}'.format(ip)
                             self.set_evidence_self_signed_certificates(profileid,twid, ip, description)
                             self.print(description, 3, 0)
+                        if 'SSL certificate validation failed' in msg:
+                            profileid = data['profileid']
+                            twid = data['twid']
+                            ip = flow['daddr']
+                            # get the description inside parenthesis
+                            description = msg + ' Destination IP: {}'.format(ip)
+                            self.set_evidence_for_invalid_certificates(profileid,twid, ip, description)
+                            self.print(description, 3, 0)
                 # ---------------------------- new_ssl channel
                 message = self.c4.get_message(timeout=0.01)
                 if message and message['data'] == 'stop_process':
+                    # Confirm that the module is done processing
+                    __database__.publish('finished_modules', self.name)
                     return True
                 if message and message['channel'] == 'new_ssl':
                     # Check for self signed certificates in new_ssl channel (ssl.log)
@@ -305,7 +334,7 @@ class Module(Module, multiprocessing.Process):
                             twid = data['twid']
                             ip = flow['daddr']
                             server_name = flow.get('server_name') # returns None if not found
-                            if server_name:
+                            if server_name is not None:
                                 description = 'Self-signed certificate. Destination: {}. IP: {}'.format(server_name,ip)
                             else:
                                 description = 'Self-signed certificate. Destination IP: {}'.format(ip)
@@ -313,11 +342,12 @@ class Module(Module, multiprocessing.Process):
                             self.print(description, 3, 0)
 
 
-        except KeyboardInterrupt:
-            return True
-        except Exception as inst:
-            self.print('Problem on the run()', 0, 1)
-            self.print(str(type(inst)), 0, 1)
-            self.print(str(inst.args), 0, 1)
-            self.print(str(inst), 0, 1)
-            return True
+            except KeyboardInterrupt:
+                # On KeyboardInterrupt, slips.py sends a stop_process msg to all modules, so continue to receive it
+                continue
+            except Exception as inst:
+                self.print('Problem on the run()', 0, 1)
+                self.print(str(type(inst)), 0, 1)
+                self.print(str(inst.args), 0, 1)
+                self.print(str(inst), 0, 1)
+                return True

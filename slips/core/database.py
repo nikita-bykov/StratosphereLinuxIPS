@@ -110,6 +110,11 @@ class Database(object):
             self.outputqueue.put('00|database|{}'.format(type(inst)))
             self.outputqueue.put('00|database|{}'.format(inst))
 
+    def add_mac_addr_to_profile(self,profileid, mac_addr):
+        """ Used when mac adddr  """
+        # Add the MAC addr of this profile
+        self.r.hset(profileid,'MAC', mac_addr)
+
     def getProfileIdFromIP(self, daddr_as_obj):
         """ Receive an IP and we want the profileid"""
         try:
@@ -890,7 +895,8 @@ class Database(object):
             'profileid': str(profileid),
             'twid': str(twid),
             'key': key,
-            'data': data
+            'data': data,
+            'description': description
         }
         evidence_to_send = json.dumps(evidence_to_send)
         self.publish('evidence_added', evidence_to_send)
@@ -1118,11 +1124,9 @@ class Database(object):
         """ Subscribe to channel """
         # For when a TW is modified
         pubsub = self.r.pubsub()
-        supported_channels = ['tw_modified' , 'evidence_added' , 'new_ip' ,  'new_flow' ,
-                              'new_dns', 'new_dns_flow','new_http', 'new_ssl' , 'new_profile',
-                              'give_threat_intelligence', 'new_letters', 'ip_info_change',
-                              'dns_info_change','tw_closed', 'core_messages','new_blocking',
-                              'new_ssh','new_url','new_notice']
+        supported_channels = ['tw_modified' , 'evidence_added' , 'new_ip' ,  'new_flow' , 'new_dns', 'new_dns_flow','new_http', 'new_ssl' , 'new_profile',\
+                    'give_threat_intelligence', 'new_letters', 'ip_info_change', 'dns_info_change', 'dns_info_change', 'tw_closed', 'core_messages',\
+                    'new_blocking', 'new_ssh','new_url','new_notice', 'finished_modules']
         for supported_channel in supported_channels:
             if supported_channel in channel:
                 pubsub.subscribe(channel)
@@ -1163,8 +1167,8 @@ class Database(object):
 
     def get_flow(self, profileid, twid, uid):
         """	
-        Returns the flow in the specific time
-        The format is a dictionary
+        Returns the flow in the specific time	
+        The format is a dictionary	
         """
         data = {}
         temp = self.r.hget(profileid + self.separator + twid + self.separator + 'flows', uid)
@@ -1179,7 +1183,7 @@ class Database(object):
     def add_flow(self, profileid='', twid='', stime='', dur='', saddr='',
                  sport='', daddr='', dport='', proto='', state='', pkts='',
                  allbytes='', spkts='', sbytes='', appproto='', uid='', label='',
-                 dbytes='',orig_ip_bytes='',dpkts='',resp_ip_bytes=''):
+                 dbytes='', orig_ip_bytes='', dpkts='', resp_ip_bytes=''):
         """	
         Function to add a flow by interpreting the data. The flow is added to the correct TW for this profile.	
         The profileid is the main profile that this flow is related too.	

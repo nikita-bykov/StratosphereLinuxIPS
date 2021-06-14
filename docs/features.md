@@ -110,6 +110,21 @@ tr:nth-child(even) {
   
 </table>
 
+
+## Usage Instructions
+
+### Virustotal Module
+
+To use this module you need to add your virustotal api key in ```modules/virustotal/api_key_secret```
+
+### ExportingAlerts Module
+
+To use this module to export to slack you need to add your slack bot token in  ```modules/ExportingAlerts/slack_bot_token_secret```
+
+If you don't have a slack bot follow steps 1 to 3 [here](https://api.slack.com/bot-users#creating-bot-user) to get one.
+
+---
+
 If you want to contribute: improve existing Slips detection modules or implement your own detection modules, see section :doc:`Contributing <contributing>`.
 
 

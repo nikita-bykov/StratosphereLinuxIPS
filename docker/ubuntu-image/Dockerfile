@@ -7,16 +7,16 @@ RUN apt update && apt install -y --no-install-recommends \
     git \
     curl \
     gnupg \
- && echo 'deb http://download.opensuse.org/repositories/security:/zeek/xUbuntu_20.10/ /' | tee /etc/apt/sources.list.d/security:zeek.list \
- && curl -fsSL https://download.opensuse.org/repositories/security:zeek/xUbuntu_20.10/Release.key | gpg --dearmor | tee /etc/apt/trusted.gpg.d/security_zeek.gpg > /dev/null
+ && echo 'deb http://download.opensuse.org/repositories/security:/zeek/xUbuntu_20.04/ /' | tee /etc/apt/sources.list.d/security:zeek.list \
+ && curl -fsSL https://download.opensuse.org/repositories/security:zeek/xUbuntu_20.04/Release.key | gpg --dearmor | tee /etc/apt/trusted.gpg.d/security_zeek.gpg > /dev/null
 
 # Install Slips dependencies.
 RUN apt update && apt install -y --no-install-recommends \
     python3 \
-    redis-server \
+    redis-server \ 
     zeek \
     python3-pip \
-	python3-certifi \
+    python3-certifi \
  && ln -s /opt/zeek/bin/zeek /usr/local/bin/bro
 
 # Upgrade pip3
@@ -34,6 +34,10 @@ RUN pip3 install sklearn
 RUN pip3 install urllib3
 RUN pip3 install scipy
 RUN pip3 install watchdog
+RUN pip3 install slackclient
+RUN pip3 install stix2
+RUN pip3 install cabby
+RUN pip3 install --ignore-installed six
 RUN pip3 install --upgrade tensorflow==2.1.0
 
 # Download and unpack Slips.
