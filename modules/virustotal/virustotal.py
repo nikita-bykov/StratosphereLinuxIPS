@@ -14,6 +14,7 @@ import time
 import ipaddress
 import threading
 import validators
+import os, pwd
 
 class Module(Module, multiprocessing.Process):
     name = 'virustotal'
@@ -59,6 +60,30 @@ class Module(Module, multiprocessing.Process):
         self.counter = 0
         # create the queue thread
         self.api_calls_thread = threading.Thread(target=self.API_calls_thread, daemon=True)
+        # If the module requires root to run, comment this
+        self.drop_privileges()
+
+    def drop_privileges(self):
+        """ Remove root privileges if the process doesn't need them """
+
+        if os.getuid() != 0:
+            # your'e not root
+            return
+        # get the second user in user list , first one is root
+        # we're looking for a user that isn't root
+        try:
+            userinfo = pwd.getpwall()[1]
+            gid_name = userinfo[3]
+            uid_name = userinfo[2]
+        except IndexError:
+            return
+        # Remove group privileges
+        os.setgroups([])
+        # Try setting the new uid/gid
+        os.setgid(gid_name)
+        os.setuid(uid_name)
+        return
+
 
     def __read_configuration(self) -> str:
         """ Read the configuration file for what we need """

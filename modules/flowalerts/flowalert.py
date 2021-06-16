@@ -25,6 +25,8 @@ import datetime
 import subprocess
 import re
 import sys
+import os, pwd
+
 
 class Module(Module, multiprocessing.Process):
     name = 'flowalerts'
@@ -76,7 +78,29 @@ class Module(Module, multiprocessing.Process):
         return False
         # get the default gateway
         self.gateway = self.get_default_gateway()
+        # If the module requires root to run, comment this
+        self.drop_privileges()
 
+    def drop_privileges(self):
+        """ Remove root privileges if the process doesn't need them """
+
+        if os.getuid() != 0:
+            # your'e not root
+            return
+        # get the second user in user list , first one is root
+        # we're looking for a user that isn't root
+        try:
+            userinfo = pwd.getpwall()[1]
+            gid_name = userinfo[3]
+            uid_name =  userinfo[2]
+        except IndexError:
+            return
+        # Remove group privileges
+        os.setgroups([])
+        # Try setting the new uid/gid
+        os.setgid(gid_name)
+        os.setuid(uid_name)
+        return
     def read_configuration(self):
         """ Read the configuration file for what we need """
         # Get the pcap filter
