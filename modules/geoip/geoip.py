@@ -8,6 +8,7 @@ import platform
 import time
 import maxminddb
 import ipaddress
+import os, pwd
 
 class Module(Module, multiprocessing.Process):
     name = 'geoip'
@@ -38,6 +39,29 @@ class Module(Module, multiprocessing.Process):
         else:
             #??
             self.timeout = None
+        # If the module requires root to run, comment this
+        self.drop_privileges()
+
+    def drop_privileges(self):
+        """ Remove root privileges if the process doesn't need them """
+
+        if os.getuid() != 0:
+            # your'e not root
+            return
+        # get the second user in user list , first one is root
+        # we're looking for a user that isn't root
+        try:
+            userinfo = pwd.getpwall()[1]
+            gid_name = userinfo[3]
+            uid_name =  userinfo[2]
+        except IndexError:
+            return
+        # Remove group privileges
+        os.setgroups([])
+        # Try setting the new uid/gid
+        os.setgid(gid_name)
+        os.setuid(uid_name)
+        return
 
     def print(self, text, verbose=1, debug=0):
         """ 
