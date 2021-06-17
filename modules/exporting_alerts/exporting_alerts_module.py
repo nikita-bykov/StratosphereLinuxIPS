@@ -54,10 +54,10 @@ class Module(Module, multiprocessing.Process):
         self.c2 = __database__.subscribe('push_to_taxii_server')
         # slack_bot_token_secret should contain your slack token only
         try:
-            with open("modules/ExportingAlerts/slack_bot_token_secret", "r") as f:
+            with open("modules/exporting_alerts/slack_bot_token_secret", "r") as f:
                 self.BOT_TOKEN = f.read()
         except FileNotFoundError:
-            self.print("Please add slack bot token to modules/ExportingAlerts/slack_bot_token_secret. Stopping.")
+            self.print("Please add slack bot token to modules/exporting_alerts/slack_bot_token_secret. Stopping.")
             # Stop the module
             __database__.publish('export_alert','stop_process')
         # Get config vaeriables
@@ -156,7 +156,7 @@ class Module(Module, multiprocessing.Process):
         # Token to login to your slack bot. it should be set in slack_bot_token_secret
         if self.BOT_TOKEN is '':
             # The file is empty
-            self.print("Can't find SLACK_BOT_TOKEN in modules/ExportingAlerts/slack_bot_token_secret.", 0, 1)
+            self.print("Can't find SLACK_BOT_TOKEN in modules/exporting_alerts/slack_bot_token_secret.", 0, 1)
             return False
         slack_client = WebClient(token=self.BOT_TOKEN)
         try:
