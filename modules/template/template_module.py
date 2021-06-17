@@ -5,9 +5,9 @@
 # 2. Copy this template file in that folder.
 #    cp modules/template/template.py modules/anomaly_detector/anomaly_detector.py
 # 3. Make it a module
-#    touch modules/template/__init__.py
+#    touch modules/template_module/__init__.py
 # 4. Change the name of the module, description and author in the variables
-# 5. The file name of the python module (template.py) MUST be the same as the name of the folder (template)
+# 5. The file name of the python module (template_module.py) MUST be: the name of the folder (template) + _module at the end
 # 6. The variable 'name' MUST have the public name of this module. This is used to ignore the module
 # 7. The name of the class MUST be 'Module', do not change it.
 

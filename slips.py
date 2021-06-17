@@ -146,7 +146,6 @@ def load_modules(to_ignore):
             # directories to search relative to the directory of the module calling __import__()."
             if module_name.endswith('module'):
                 module = importlib.import_module(module_name)
-                #todo document this
         except ImportError as e:
             print("Something wrong happened while importing the module {0}: {1}".format(module_name, e))
             continue
@@ -349,7 +348,7 @@ if __name__ == '__main__':
         # Ignore exporting alerts module if export_to is empty
         export_to = config.get('ExportingAlerts', 'export_to').rstrip("][").replace(" ","")
         if 'stix' not in export_to.lower() and 'slack' not in export_to.lower():
-            to_ignore.append('ExportingAlerts')
+            to_ignore.append('exporting_alerts')
         # Disable blocking if was not asked and if it is not interface
         if not args.blocking or not args.interface:
             to_ignore.append('blocking')
