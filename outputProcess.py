@@ -20,6 +20,8 @@ import multiprocessing
 import sys
 import io
 from slips_files.core.database import __database__
+import os
+import platform
 
 # Output Process
 class OutputProcess(multiprocessing.Process):
@@ -39,6 +41,8 @@ class OutputProcess(multiprocessing.Process):
             print('Verbosity: {}. Debugging: {}'.format(str(self.verbose), str(self.debug)))
         # Start the DB
         __database__.start(self.config)
+        # Comment this if the module needs root to work
+        self.drop_root_privs()
 
 
     def change_stdout(self, file):
@@ -47,6 +51,24 @@ class OutputProcess(multiprocessing.Process):
         # write_through= True, to flush the buffer to disk, from there the file can read it.
         # without it, the file writer keeps the information in a local buffer that's not accessible to the file.
         sys.stdout = io.TextIOWrapper(open(file, 'wb', 0), write_through=True)
+        return
+
+    def drop_root_privs(self):
+        """ Drop root privileges if the module doesn't need them. """
+
+        if platform.system() != 'Linux':
+            return
+        try:
+            # Get the uid/gid of the user that launched sudo
+            sudo_uid = int(os.getenv("SUDO_UID"))
+            sudo_gid = int(os.getenv("SUDO_GID"))
+        except TypeError:
+            # env variables are not set, you're not root
+            return
+        # Change the current process’s real and effective uids and gids to that user
+        # -1 means value is not changed.
+        os.setresgid(sudo_gid, sudo_gid, -1)
+        os.setresuid(sudo_uid, sudo_uid, -1)
         return
 
     def process_line(self, line):

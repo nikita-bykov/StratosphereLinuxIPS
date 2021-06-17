@@ -5,6 +5,8 @@ import json
 from typing import Tuple, Dict, Set, Callable
 import configparser
 import traceback
+import os
+import platform
 from datetime import datetime
 import ipaddress
 import sys
@@ -29,6 +31,26 @@ class Database(object):
         self.malicious_label = 'malicious'
         # this list will store evidence that slips detected but can't
         # alert for it before the flow of them is added to our db
+        self.drop_root_privs()
+
+    def drop_root_privs(self):
+        """ Drop root privileges if the module doesn't need them. """
+
+        if platform.system() != 'Linux':
+            return
+        try:
+            # Get the uid/gid of the user that launched sudo
+            sudo_uid = int(os.getenv("SUDO_UID"))
+            sudo_gid = int(os.getenv("SUDO_GID"))
+        except TypeError:
+            # env variables are not set, you're not root
+            return
+        # Change the current process’s real and effective uids and gids to that user
+        # -1 means value is not changed.
+        os.setresgid(sudo_gid, sudo_gid, -1)
+        os.setresuid(sudo_uid, sudo_uid, -1)
+        return
+
 
     def start(self, config):
         """ Start the DB. Allow it to read the conf """

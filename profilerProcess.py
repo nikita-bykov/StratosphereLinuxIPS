@@ -34,6 +34,7 @@ from tzlocal import get_localzone
 import validators
 import socket
 import requests
+import platform
 
 def timeit(method):
     def timed(*args, **kw):
@@ -78,6 +79,27 @@ class ProfilerProcess(multiprocessing.Process):
         # there has to be a timeout or it will wait forever and never receive a new line
         self.timeout = 0.0000001
         self.c1 = __database__.subscribe('reload_whitelist')
+        # Comment this if the module needs root to work
+        self.drop_root_privs()
+
+    def drop_root_privs(self):
+        """ Drop root privileges if the module doesn't need them. """
+
+        if platform.system() != 'Linux':
+            return
+        try:
+            # Get the uid/gid of the user that launched sudo
+            sudo_uid = int(os.getenv("SUDO_UID"))
+            sudo_gid = int(os.getenv("SUDO_GID"))
+        except TypeError:
+            # env variables are not set, you're not root
+            return
+        # Change the current process’s real and effective uids and gids to that user
+        # -1 means value is not changed.
+        os.setresgid(sudo_gid, sudo_gid, -1)
+        os.setresuid(sudo_uid, sudo_uid, -1)
+        return
+
 
     def print(self, text, verbose=1, debug=0):
         """
