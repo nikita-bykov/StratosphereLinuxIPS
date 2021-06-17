@@ -18,8 +18,8 @@ from slips.core.database import __database__
 import platform,os
 # Your imports
 import configparser
-from modules.UpdateManager.timer_manager import InfiniteTimer
-from modules.UpdateManager.update_file_manager import UpdateFileManager
+from modules.update_manager.timer_manager import InfiniteTimer
+from modules.update_manager.update_file_manager import UpdateFileManager
 
 
 class UpdateManager(Module, multiprocessing.Process):

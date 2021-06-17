@@ -131,7 +131,7 @@ class Module(Module, multiprocessing.Process):
         # self.print(f'Post Padded Seq sent: {pre_behavioral_model}. Shape: {pre_behavioral_model.shape}')
         return pre_behavioral_model
 
-    def run(self, model_file="modules/lstm-cc-detection-1/rnn_model.h5"):
+    def run(self, model_file="modules/lstm_cc_detection1/rnn_model.h5"):
         # TODO: set the decision threshold in the function call
         try:
             # Download lstm model
