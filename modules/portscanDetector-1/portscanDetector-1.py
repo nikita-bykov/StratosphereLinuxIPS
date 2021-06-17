@@ -4,7 +4,7 @@ from slips.core.database import __database__
 import time
 import json
 import platform
-import os, pwd
+import os
 
 # Port Scan Detector Process
 class PortScanProcess(Module, multiprocessing.Process):
@@ -44,28 +44,25 @@ class PortScanProcess(Module, multiprocessing.Process):
             #??
             self.timeout = None
         self.separator = '_'
-        # If the module requires root to run, comment this
-        self.drop_privileges()
+        # Comment this if the module needs root to work
+        self.drop_root_privs()
 
-    def drop_privileges(self):
-        """ Remove root privileges if the process doesn't need them """
+    def drop_root_privs(self):
+        """ Drop root privileges if the module doesn't need them. """
 
-        if os.getuid() != 0:
-            # your'e not root
+        if platform.system() != 'Linux':
             return
-        # get the second user in user list , first one is root
-        # we're looking for a user that isn't root
         try:
-            userinfo = pwd.getpwall()[1]
-            gid_name = userinfo[3]
-            uid_name =  userinfo[2]
-        except IndexError:
+            # Get the uid/gid of the user that launched sudo
+            sudo_uid = int(os.getenv("SUDO_UID"))
+            sudo_gid = int(os.getenv("SUDO_GID"))
+        except TypeError:
+            # env variables are not set, you're not root
             return
-        # Remove group privileges
-        os.setgroups([])
-        # Try setting the new uid/gid
-        os.setgid(gid_name)
-        os.setuid(uid_name)
+        # Change the current process’s real and effective uids and gids to that user
+        # -1 means value is not changed.
+        os.setresgid(sudo_gid, sudo_gid, -1)
+        os.setresuid(sudo_uid, sudo_uid, -1)
         return
 
     def print(self, text, verbose=1, debug=0):

@@ -28,6 +28,7 @@ import traceback
 import os
 import binascii
 import base64
+import platform
 
 def timeit(method):
     def timed(*args, **kw):
@@ -63,6 +64,27 @@ class ProfilerProcess(multiprocessing.Process):
         __database__.setOutputQueue(self.outputqueue)
         # 1st. Get the data from the interpreted columns
         self.id_separator = __database__.getFieldSeparator()
+        # Comment this if the module needs root to work
+        self.drop_root_privs()
+
+    def drop_root_privs(self):
+        """ Drop root privileges if the module doesn't need them. """
+
+        if platform.system() != 'Linux':
+            return
+        try:
+            # Get the uid/gid of the user that launched sudo
+            sudo_uid = int(os.getenv("SUDO_UID"))
+            sudo_gid = int(os.getenv("SUDO_GID"))
+        except TypeError:
+            # env variables are not set, you're not root
+            return
+        # Change the current process’s real and effective uids and gids to that user
+        # -1 means value is not changed.
+        os.setresgid(sudo_gid, sudo_gid, -1)
+        os.setresuid(sudo_uid, sudo_uid, -1)
+        return
+
 
     def print(self, text, verbose=1, debug=0):
         """

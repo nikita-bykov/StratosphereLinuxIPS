@@ -29,6 +29,7 @@ import json
 import traceback
 import subprocess
 import pwd
+import platform
 
 # Input Process
 class InputProcess(multiprocessing.Process):
@@ -55,27 +56,27 @@ class InputProcess(multiprocessing.Process):
             self.packet_filter = "'" + packet_filter + "'"
         self.event_handler = None
         self.event_observer = None
-        self.drop_privileges()
+        # Comment this if the module needs root to work
+        self.drop_root_privs()
 
-    def drop_privileges(self):
-        """ Remove root privileges if the process doesn't need them """
+    def drop_root_privs(self):
+        """ Drop root privileges if the module doesn't need them. """
 
-        if os.getuid() != 0:
-            # your'e not root
+        if platform.system() != 'Linux':
             return
-        # get the second user in user list , first one is root
-        # we're looking for a user that isn't root
         try:
-            userinfo = pwd.getpwall()[1]
-            gid_name = userinfo[3]
-            uid_name = userinfo[2]
-        except IndexError:
+            # Get the uid/gid of the user that launched sudo
+            sudo_uid = int(os.getenv("SUDO_UID"))
+            sudo_gid = int(os.getenv("SUDO_GID"))
+        except TypeError:
+            # env variables are not set, you're not root
             return
-        # Remove group privileges
-        os.setgroups([])
-        # Try setting the new uid/gid
-        os.setgid(gid_name)
+        # Change the current process’s real and effective uids and gids to that user
+        # -1 means value is not changed.
+        os.setresgid(sudo_gid, sudo_gid, -1)
+        os.setresuid(sudo_uid, sudo_uid, -1)
         return
+
 
     def read_configuration(self):
         """ Read the configuration file for what we need """

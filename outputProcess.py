@@ -18,7 +18,8 @@
 
 import multiprocessing
 import sys
-
+import os
+import platform
 
 # Output Process
 class OutputProcess(multiprocessing.Process):
@@ -33,6 +34,26 @@ class OutputProcess(multiprocessing.Process):
         self.quiet = False
         if self.verbose > 2:
             print('Verbosity: {}. Debugging: {}'.format(str(self.verbose), str(self.debug)))
+        # Comment this if the module needs root to work
+        self.drop_root_privs()
+
+    def drop_root_privs(self):
+        """ Drop root privileges if the module doesn't need them. """
+
+        if platform.system() != 'Linux':
+            return
+        try:
+            # Get the uid/gid of the user that launched sudo
+            sudo_uid = int(os.getenv("SUDO_UID"))
+            sudo_gid = int(os.getenv("SUDO_GID"))
+        except TypeError:
+            # env variables are not set, you're not root
+            return
+        # Change the current process’s real and effective uids and gids to that user
+        # -1 means value is not changed.
+        os.setresgid(sudo_gid, sudo_gid, -1)
+        os.setresuid(sudo_uid, sudo_uid, -1)
+        return
 
     def process_line(self, line):
         """
