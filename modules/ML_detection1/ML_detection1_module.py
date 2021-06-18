@@ -115,7 +115,7 @@ class Module(Module, multiprocessing.Process):
                 """
                 message = self.c1.get_message(timeout=-1)
                 #self.print('Message received from channel {} with data {}'.format(message['channel'], message['data']), 0, 1)
-                # if timewindows are not updated for a long time (see at logsProcess.py), we will stop slips automatically.The 'stop_process' line is sent from logsProcess.py.
+                # if timewindows are not updated for a long time (see at logs_process.py), we will stop slips automatically.The 'stop_process' line is sent from logs_process.py.
                 if message['data'] == 'stop_process':
                     return True
                 elif message['channel'] == 'new_flow' and message['data'] != 1:

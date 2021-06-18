@@ -212,7 +212,7 @@ class EvidenceProcess(multiprocessing.Process):
             while True:
                 # Wait for a message from the channel that a TW was modified
                 message = self.c1.get_message(timeout=self.timeout)
-                # if timewindows are not updated for a long time (see at logsProcess.py), we will stop slips automatically.The 'stop_process' line is sent from logsProcess.py.
+                # if timewindows are not updated for a long time (see at logs_process.py), we will stop slips automatically.The 'stop_process' line is sent from logs_process.py.
                 if message['data'] == 'stop_process':
                     self.logfile.close()
                     self.jsonfile.close()

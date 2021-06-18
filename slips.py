@@ -267,12 +267,12 @@ if __name__ == '__main__':
     Import modules here because if user wants to run "./slips.py --help" it should never throw error. 
     """
     from multiprocessing import Queue
-    from inputProcess import InputProcess
-    from outputProcess import OutputProcess
-    from profilerProcess import ProfilerProcess
-    from guiProcess import GuiProcess
-    from logsProcess import LogsProcess
-    from evidenceProcess import EvidenceProcess
+    from input_process import InputProcess
+    from output_process import OutputProcess
+    from profiler_process import ProfilerProcess
+    from gui_process import GuiProcess
+    from logs_process import LogsProcess
+    from evidence_process import EvidenceProcess
 
     # Any verbosity passed as parameter overrides the configuration. Only check its value
     if args.verbose == None:
