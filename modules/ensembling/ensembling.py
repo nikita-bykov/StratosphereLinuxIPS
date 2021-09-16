@@ -54,7 +54,7 @@ class Module(Module, multiprocessing.Process):
         self.separator = __database__.separator
         self.timeout = None
         # If the module requires root to run, comment this
-        self.drop_privileges()
+        self.drop_root_privs()
 
     def drop_root_privs(self):
         """ Drop root privileges if the module doesn't need them. """

@@ -66,6 +66,10 @@ class Module(Module, multiprocessing.Process):
         # store them as network objects
         self.ignored_ranges = list(map(ipaddress.ip_network,self.ignored_ranges))
         self.p2p_daddrs = {}
+        # get the default gateway
+        self.gateway = self.get_default_gateway()
+        # If the module requires root to run, comment this
+        self.drop_root_privs()
 
     def is_ignored_ip(self, ip) -> bool:
         ip_obj =  ipaddress.ip_address(ip)
@@ -76,10 +80,7 @@ class Module(Module, multiprocessing.Process):
                 # ip found in one of the ranges, ignore it
                 return True
         return False
-        # get the default gateway
-        self.gateway = self.get_default_gateway()
-        # If the module requires root to run, comment this
-        self.drop_privileges()
+
 
     def drop_root_privs(self):
         """ Drop root privileges if the module doesn't need them. """

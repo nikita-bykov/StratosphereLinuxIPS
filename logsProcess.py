@@ -18,8 +18,7 @@
 
 import multiprocessing
 import sys
-from datetime import datetime
-from datetime import timedelta
+import platform
 import os
 import threading
 import time

@@ -58,7 +58,7 @@ class InputProcess(multiprocessing.Process):
         self.event_observer = None
         # number of lines read
         self.lines = 0
-        self.drop_privileges()
+        self.drop_root_privs()
 
     def drop_root_privs(self):
         """ Drop root privileges if the module doesn't need them. """
