@@ -29,6 +29,7 @@ import time
 import _thread
 import sys
 import validators
+import datetime
 
 
 class Module(Module, multiprocessing.Process):
@@ -37,7 +38,7 @@ class Module(Module, multiprocessing.Process):
     You need to have the token in your environment variables to use this module
     """
     name = 'ExportingAlerts'
-    description = 'Module to export alerts to slack and STIX'
+    description = 'Module to export alerts to slack, STIX and json format.'
     authors = ['Alya Gomaa']
 
     def __init__(self, outputqueue, config):
@@ -96,6 +97,9 @@ class Module(Module, multiprocessing.Process):
         # To avoid duplicates in STIX_data.json
         self.added_ips = set()
         self.timeout = None
+        # flag to open json file only once
+        self.is_json_file_opened = False
+        self.json_file_handle = False
         # If the module requires root to run, comment this
         self.drop_root_privs()
 
@@ -326,6 +330,44 @@ class Module(Module, multiprocessing.Process):
             else:
                 self.print(f"{self.push_delay} seconds passed, no new alerts in STIX_data.json.")
 
+    def export_to_json(self, evidence):
+        """ Export alerts and flows to exported_alerts.json, a suricata like json format. """
+
+        if not self.is_json_file_opened:
+            self.json_file_handle = open('exported_alerts.json','a')
+            self.is_json_file_opened = True
+
+        profileid= evidence['profileid']
+        twid= evidence['twid']
+        uid= evidence['uid']
+        # get the original fllow that triggered this evidence
+        flow = __database__.get_flow(profileid,twid,uid)[uid]
+        # portscans aren't associated with 1 flow, so we don't have a uid or a flow for this alert, ignore #todo
+        if flow:
+            flow = json.loads(flow)
+            # suricata ts format: Date+T+Time
+            # toddo take the original timestamp or the current tiemstamp?
+            timestamp =  str(datetime.datetime.now()).replace(' ','T')
+            line = {'timestamp': timestamp,
+                    'flow_id' : uid,
+                    'src_ip': flow.get('saddr'),
+                    'src_port': flow.get('sport'),
+                    'dest_ip': flow.get('daddr'),
+                    'dest_port': flow.get('dport'),
+                    'proto': flow.get('proto'),
+                    'event_type': 'alert',
+                    'alert': evidence['data']['description'],
+                    'state': flow.get('state'),
+                    'bytes_toserver': flow.get('sbytes'),
+                    'pkts_toserver': flow.get('spkts')
+                    }
+            if flow.get('label') != 'unknown':
+                line.update({'label': flow.get('label') })
+            line = str(line)
+            self.json_file_handle.write(f'{line}\n')
+            return True
+        return False
+
     def run(self):
         # Main loop function
         while True:
@@ -336,6 +378,9 @@ class Module(Module, multiprocessing.Process):
                     # We need to publish to taxii server before stopping
                     if 'stix' in self.export_to:
                         self.push_to_TAXII_server()
+
+                    if self.json_file_handle:
+                        self.json_file_handle.close()
                     # Confirm that the module is done processing
                     __database__.publish('finished_modules', self.name)
                     return True
@@ -361,7 +406,8 @@ class Module(Module, multiprocessing.Process):
                             exported_to_stix = self.export_to_STIX(msg_to_send)
                             if not exported_to_stix:
                                 self.print("Problem in export_to_STIX()", 6, 6)
-
+                        if 'json' in self.export_to:
+                            self.export_to_json(evidence)
             except KeyboardInterrupt:
                 # On KeyboardInterrupt, slips.py sends a stop_process msg to all modules, so continue to receive it
                 continue

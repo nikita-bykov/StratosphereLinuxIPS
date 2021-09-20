@@ -33,16 +33,7 @@ class GuiProcess(multiprocessing.Process):
         self.config = config
         # Read the configuration
         self.read_configuration()
-        # Set the timeout based on the platform. This is because the pyredis lib does not have officially recognized the timeout=None as it works in only macos and timeout=-1 as it only works in linux
-        if platform.system() == 'Darwin':
-            # macos
-            self.timeout = None
-        elif platform.system() == 'Linux':
-            # now linux also needs to be non-negative
-            self.timeout = -1
-        else:
-            #??
-            self.timeout = None
+        self.timeout = None
         # Comment this if the module needs root to work
         self.drop_root_privs()
 

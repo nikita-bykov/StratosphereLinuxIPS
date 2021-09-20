@@ -37,7 +37,7 @@ class EvidenceProcess(multiprocessing.Process):
     This should be converted into a module
     """
     def __init__(self, inputqueue, outputqueue, config, output_folder, logs_folder):
-        self.name = 'Evidence'
+        self.name = 'EvidenceProcess'
         multiprocessing.Process.__init__(self)
         self.inputqueue = inputqueue
         self.outputqueue = outputqueue
@@ -58,16 +58,7 @@ class EvidenceProcess(multiprocessing.Process):
         else:
             self.logs_logfile = False
             self.logs_jsonfile = False
-
-        # Set the timeout based on the platform. This is because the pyredis lib does not have officially recognized the timeout=None as it works in only macos and timeout=-1 as it only works in linux
-        if platform.system() == 'Darwin':
-            # macos
-            self.timeout = None
-        elif platform.system() == 'Linux':
-            # now linux also needs to be non-negative
-            self.timeout = None
-        else:
-            self.timeout = None
+        self.timeout = None
         # Comment this if the module needs root to work
         self.drop_root_privs()
 
@@ -192,7 +183,7 @@ class EvidenceProcess(multiprocessing.Process):
         '''
         Clear the file if exists for evidence log
         '''
-        if os.path.exists(output_folder  + 'alerts.json'):
+        if path.exists(output_folder  + 'alerts.json'):
             open(output_folder  + 'alerts.json', 'w').close()
         return open(output_folder + 'alerts.json', 'a')
 
@@ -465,7 +456,7 @@ class EvidenceProcess(multiprocessing.Process):
                 if message['data'] == 'stop_process':
                     self.logfile.close()
                     self.jsonfile.close()
-                    __database__.publish('finished_modules', self.name)
+                    __database__.publish('finished_modules', 'EvidenceProcess')
                     return True
                 elif message['channel'] == 'evidence_added' and type(message['data']) is not int:
                     # Data sent in the channel as a json dict, it needs to be deserialized first
