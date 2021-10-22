@@ -1357,8 +1357,61 @@ class Database(object):
             return False
         return pubsub
 
+    def get_module_from_pid(self, pid):
+        """ returns the module name the has this pid """
+        modules_PIDs = self.get_PIDs()
+        for module_name, module_pid in modules_PIDs.items():
+            if pid==module_pid:
+                return module_name
+
+    def increase_pending_msgs_queue(self, channel):
+        """
+        Each module has a key with it's name in the pending_msgs hashmap, the key is something like this:
+        'flowalerts' : {'channel1': pending_msgs,'channel2': pending_msgs ...}
+
+        """
+        # increase the number of msgs in this channel, we will need this later to check if the module
+        # has any pending msgs to process before dying
+        # get the calling process pid:
+        parent_pid = os.getppid()
+        print(f'@@@@@@@@@@@@@@@@@@   database pid : {os.getpid()} parent pid: {parent_pid}')
+        module_name = self.get_module_from_pid(parent_pid)
+
+        if module_name!= None:
+            print(f'@@@@@@@@@@@@@@@@@@   got a msg from {module_name} in channel: {channel}')
+            # get the number of pending msgs already in this module
+            pending_msgs =  self.r.hget('pending_msgs', parent_pid)
+            # does this module have a dict with channels and pending msgs?
+            if pending_msgs:
+                print(f'@@@@@@@@@@@@@@@@@@   {module_name} module haas pending msgs')
+                pending_msgs = json.loads(pending_msgs)
+                # get the pending msgs of this channel only
+                pending_msgs = pending_msgs.get(channel,False)
+
+
+                if pending_msgs:
+                    print(f'@@@@@@@@@@@@@@@@@@   {module_name} module haas {pending_msgs} pending msgs in {channel} channel ')
+                    # we already have pending msgs for this channel, increase their ctr by 1
+                    pending_msgs+=1
+                    print(f'@@@@@@@@@@@@@@@@@@   now theyre {pending_msgs}')
+                else:
+                    print(f'@@@@@@@@@@@@@@@@@@   {module_name} module doesnt have pending msgs in {channel} channel  now its 1')
+                    # we don't have pending msgs for this channel for this module
+                    pending_msgs =1
+            else:
+                # first pending msg of all channels in this module
+                print(f'@@@@@@@@@@@@@@@@@@   first pending msg of all channels in {module_name} module')
+                pending_msgs = 1
+
+            print(f'@@@@@@@@@@@@@@@@@@   stooring {module_name}: {pending_msgs}')
+            self.r.hset('pending_msgs', parent_pid, pending_msgs)
+            time.sleep(0.5)
+
     def publish(self, channel, data):
         """ Publish something """
+
+        self.increase_pending_msgs_queue(channel)
+
         self.r.publish(channel, data)
 
     def publish_stop(self):
