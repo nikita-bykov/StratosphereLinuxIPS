@@ -6,6 +6,7 @@ on:
   push:
     branches:
     - 'develop'
+    - 'alya-fix-merge-errors'
     - '!master'
   pull_request:
     branches:
