@@ -16,9 +16,12 @@ jobs:
 
   run_unit_tests:
     # specify the host OS
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
     # 2 hours timeout
-    timeout-minutes: 7200
+    timeout-minutes: 60
     # start a container using slips dependencies image
     container:
       image: alyagomaa/slips_dependencies:dependencies
