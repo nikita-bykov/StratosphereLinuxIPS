@@ -9,7 +9,6 @@ on:
     - 'develop'
     - '!master'
   pull_request:
-    types: [labeled, unlabeled, ready_for_review, opened]
     branches:
     - 'develop'
     - '!master'
@@ -22,8 +21,8 @@ jobs:
     # 2 hours timeout
     timeout-minutes: 60
     # start a container using slips dependencies image
-    container:
-      image: alyagomaa/slips_dependencies:dependencies
+#     container:
+#       image: alyagomaa/slips_dependencies:dependencies
 
     steps:
     - uses: actions/checkout@v2
