@@ -12,7 +12,7 @@ Slips is a behavioral based Intrusion Prevention System<br><br>
 <a href="https://asciinema.org/a/ygkJGTXU3jyVBmow7XlgXBHtm" target="_blank"><img src="https://asciinema.org/a/ygkJGTXU3jyVBmow7XlgXBHtm.svg" /></a>
 
 
-Slips documentation is [here](https://stratospherelinuxips.readthedocs.io/en/develop/) <br>
+Slips documentation is [here](https://stratospherelinuxips.readthedocs.io/en/develop/) <br> 
 
 [Features](#features) — [Running Slips in a Docker](#installation) — [Authors](#people-involved) - [How to contribute](#how-to-contribute)
 </h3>
