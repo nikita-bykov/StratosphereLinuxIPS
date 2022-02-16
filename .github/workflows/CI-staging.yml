@@ -3,13 +3,11 @@
 name: CI-staging
 
 on:
-  workflow_dispatch:
   push:
     branches:
     - 'develop'
     - '!master'
   pull_request:
-    types: [labeled, unlabeled, ready_for_review]
     branches:
     - 'develop'
     - '!master'
@@ -19,9 +17,11 @@ jobs:
   run_unit_tests:
     # specify the host OS
     runs-on: ubuntu-latest
+    # 2 hours timeout
+    timeout-minutes: 50
     # start a container using slips dependencies image
-#     container:
-#       image: alyagomaa/slips_dependencies:dependencies
+    container:
+      image: alyagomaa/slips_dependencies:dependencies
 
     steps:
     - uses: actions/checkout@v2
