@@ -4,6 +4,8 @@ name: CI-staging
 
 on:
   workflow_dispatch:
+  issue_comment:
+    types: [created, deleted]
   push:
     branches:
     - 'develop'
