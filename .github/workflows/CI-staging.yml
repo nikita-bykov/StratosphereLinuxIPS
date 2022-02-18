@@ -3,6 +3,7 @@
 name: CI-staging
 
 on:
+  pull_request_review_comment:
   workflow_dispatch:
   issue_comment:
     types: [created, deleted]
